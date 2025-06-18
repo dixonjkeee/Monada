@@ -1,7 +1,7 @@
 import requests
 import pandas as pd 
 import os
-from functions import get_goods, get_records, get_services, get_clients, \
+from functions import get_records_and_clients, get_services, \
     get_service_categories, get_staff, upload_to_postgres
 from dotenv import load_dotenv
 
@@ -41,21 +41,26 @@ headers = {
 # connection_string = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 # engine = create_engine(connection_string)
 
+
 # === Основной процесс ===
 print("🚀 Начинаем полную загрузку данных из YClients и запись в PostgreSQL...\n")
 
+staff = get_staff(company_id, headers)
+service_categories = get_service_categories(company_id, headers)
+services = get_services(company_id, headers)
+records, clients = get_records_and_clients(company_id, headers)
+
 entities = {
-    "clients": get_clients(company_id, headers),
-    "records": get_records(company_id, headers),
-    "staff": get_staff(company_id, headers),
-    "service_categories": get_service_categories(company_id, headers),
-    "services" : get_services(company_id, headers),
-    "goods": get_goods(company_id, headers)
+    "clients": clients,
+    "records": records,
+    "staff": staff,
+    "service_categories": service_categories,
+    "services" : services
 }
 
 for table_name, df in entities.items():
-    print(f"\n=== {table_name.upper()} ===")
-    upload_to_postgres(df, table_name)
-    # df.to_excel(f"Dashboard/{table_name}.xlsx", index=False) # Для выгрузки excel
+    # print(f"\n=== {table_name.upper()} ===")
+    # upload_to_postgres(df, table_name, engine)
+    df.to_excel(f"Dashboard/{table_name}.xlsx", index=False) # Для выгрузки excel
 
 print("\n🎉 Все данные успешно загружены в БД!")

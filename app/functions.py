@@ -49,6 +49,19 @@ def get_staff(company_id, headers):
         })
     return staff
 
+def get_schedule(company_id, headers):
+    url = f"https://api.yclients.com/api/v1/company/{company_id}/staff/schedule"
+    today = pd.Timestamp.now().strftime('%Y-%m-%d')
+    params = {
+        'start_date' : '2024-01-01',
+        'end_date' : today
+    }
+    response = requests.get(url, headers=headers, params=params)
+    schedule = pd.json_normalize(response.json()['data']).explode('slots').reset_index(drop=True)
+    schedule[['from', 'to']] =  pd.json_normalize(schedule['slots'])
+    schedule.drop('slots', axis=1, inplace=True)
+    return schedule
+
 
 # === Категории услуг  ===
 def get_service_categories(company_id, headers):

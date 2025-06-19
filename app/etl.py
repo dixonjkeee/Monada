@@ -2,7 +2,7 @@ import requests
 import pandas as pd 
 import os
 from functions import get_records_and_clients, get_services, \
-    get_service_categories, get_staff, upload_to_postgres
+    get_service_categories, get_staff, get_schedule, upload_to_postgres
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,11 +16,10 @@ partner_id = os.getenv('PARTNER_ID')
 user_token = requests.post(
     'https://api.yclients.com/api/v1/auth', 
     headers={
-        "Authorization": f"Bearer {partner_token}", "Accept": "application/vnd.yclients.v2+json"
+        "Authorization": f"Bearer {partner_token}", 
+        "Accept": "application/vnd.yclients.v2+json"
     }, 
-    json={
-        "login": login, "password": password
-    }
+    json={"login": login, "password": password}
 ).json()['data']['user_token']
 
 # Устанавливаем заголовки для запросов
@@ -41,11 +40,11 @@ headers = {
 # connection_string = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 # engine = create_engine(connection_string)
 
-
 # === Основной процесс ===
 print("🚀 Начинаем полную загрузку данных из YClients и запись в PostgreSQL...\n")
 
 staff = get_staff(company_id, headers)
+schedule = get_schedule(company_id, headers)
 service_categories = get_service_categories(company_id, headers)
 services = get_services(company_id, headers)
 records, clients = get_records_and_clients(company_id, headers)
@@ -54,6 +53,7 @@ entities = {
     "clients": clients,
     "records": records,
     "staff": staff,
+    "schedule" : schedule,
     "service_categories": service_categories,
     "services" : services
 }

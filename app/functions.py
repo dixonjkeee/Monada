@@ -1,11 +1,7 @@
 from tqdm import tqdm
 import requests
 import pandas as pd
-from sqlalchemy import create_engine
-from sqlalchemy import Table, Column, MetaData, String, Numeric, JSON, DateTime, Integer, Boolean
-from sqlalchemy.dialects.postgresql import JSONB
 from tqdm import tqdm
-from datetime import datetime, timedelta
 
 # === Функция для загрузки всех страниц из API ===
 def get_all_pages(url, headers, method='GET', body=None):
@@ -49,6 +45,7 @@ def get_staff(company_id, headers):
         })
     return staff
 
+# === Расписание ===
 def get_schedule(company_id, headers):
     url = f"https://api.yclients.com/api/v1/company/{company_id}/staff/schedule"
     today = pd.Timestamp.now().strftime('%Y-%m-%d')
@@ -81,37 +78,6 @@ def get_services(company_id, headers):
     response = requests.get(url, headers=headers)
     services = pd.json_normalize(response.json()['data'])[cols]
     return services
-
-
-# === Клиенты  ===
-# def get_clients(company_id, headers):
-#     url = f"https://api.yclients.com/api/v1/company/{company_id}/clients/search"
-#     body = {"fields": ["id", "name", "surname", "phone", "email"]}
-#     clients_from_api = pd.DataFrame(get_all_pages(url, headers, method='POST', body=body))
-
-#     url_rec = f"https://api.yclients.com/api/v1/records/{company_id}"
-#     clients_from_records = pd.DataFrame(get_all_pages(url_rec, headers))['client']
-#     clients_from_records = pd.json_normalize(clients_from_records)[[
-#         'id', 'name', 'surname', 'phone', 'email']].dropna(subset='id').astype({'id' : 'int32'})
-    
-#     all_clients = pd.concat(
-#         [
-#             clients_from_api, 
-#             clients_from_records
-#         ], axis=0
-#     ).drop_duplicates('id').reset_index(drop=True)
-#     return all_clients
-
-
-# === Продукты ===
-# def get_goods(company_id, headers):
-#     url = f"https://api.yclients.com/api/v1/goods/{company_id}/"
-#     cols = [
-#         'title', 'category', 'category_id', 'good_id', 'cost', 
-#         'unit_short_title', 'actual_cost','last_change_date'
-#     ]
-#     return pd.DataFrame(get_all_pages(url, headers))[cols]
-
 
 # === Записи ===
 def get_records_and_clients(company_id, headers):
@@ -163,70 +129,3 @@ def get_records_and_clients(company_id, headers):
         'service_cost_to_pay' : 'int64'
     })
     return records, clients
-
-
-# === Функция для создания правильных типов данных ===
-# def create_table_with_types(df, table_name, engine):
-#     metadata = MetaData()
-#     columns = []
-
-#     for col in df.columns:
-#         sample_value = df[col].dropna().iloc[0] if not df[col].dropna().empty else None
-
-#         if isinstance(sample_value, dict) or isinstance(sample_value, list):
-#             col_type = JSONB
-#         elif isinstance(sample_value, bool):
-#             col_type = Boolean
-#         elif isinstance(sample_value, int):
-#             col_type = Integer
-#         elif isinstance(sample_value, float):
-#             col_type = Numeric
-#         elif isinstance(sample_value, datetime.datetime):
-#             col_type = DateTime
-#         else:
-#             col_type = String
-
-#         columns.append(Column(col, col_type))
-
-#     table = Table(table_name, metadata, *columns)
-#     metadata.drop_all(engine, [table], checkfirst=True)  # Удалить если уже есть (заменить)
-#     metadata.create_all(engine)  # Создать таблицу с нужными типами
-#     print(f"✅ Таблица {table_name} создана с правильными типами колонок.")
-
-
-# === Функция для создания таблиц с правильными типами данных в БД ===
-
-# def create_table_with_types(df, table_name, engine):
-#     metadata = MetaData()
-#     columns = []
-
-    # for col in df.columns:
-    #     sample_value = df[col].dropna().iloc[0] if not df[col].dropna().empty else None
-
-    #     if isinstance(sample_value, dict) or isinstance(sample_value, list):
-    #         col_type = JSONB
-    #     elif isinstance(sample_value, bool):
-    #         col_type = Boolean
-    #     elif isinstance(sample_value, int):
-    #         col_type = Integer
-    #     elif isinstance(sample_value, float):
-    #         col_type = Numeric
-    #     elif isinstance(sample_value, datetime.datetime):
-    #         col_type = DateTime
-    #     else:
-    #         col_type = String
-
-    #     columns.append(Column(col, col_type))
-
-    # table = Table(table_name, metadata, *columns)
-    # metadata.drop_all(engine, [table], checkfirst=True)  # Удалить если уже есть (заменить)
-    # metadata.create_all(engine)  # Создать таблицу с нужными типами
-    # print(f"✅ Таблица {table_name} создана с правильными типами колонок.")
-
-# === Функция для заливки датафрейма в БД ===
-def upload_to_postgres(df, table_name, engine):
-    if not df.empty:
-        df.to_sql(table_name, engine, if_exists='append', index=False)
-        print(f"📥 Данные загружены в таблицу {table_name} ({len(df)} строк).")
-    else:
-        print(f"⚠️ Таблица {table_name} пуста, пропущена.")

@@ -1,8 +1,9 @@
 import requests
 import pandas as pd 
 import os
+from sqlalchemy import create_engine
 from functions import get_records_and_clients, get_services, \
-    get_service_categories, get_staff, get_schedule, upload_to_postgres
+    get_service_categories, get_staff, get_schedule
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,17 +29,20 @@ headers = {
     "Content-Type" : "application/json",
     "Authorization": f"Bearer {partner_token}, User {user_token}"
 }
-        
+
+# Команда для создания БД 
+# docker run --name monada_db -e POSTGRES_PASSWORD=secret -p 5431:5432 -d postgres
+
 # === Данные подключения к PostgreSQL ===
-# db_user = 'user'
-# db_password = 'password'
-# db_name = 'Monada'
-# db_host = 'localhost'
-# db_port = '5433'
+db_user = 'user'
+db_password = 'secret'
+db_name = 'monada'
+db_host = 'localhost'
+db_port = '5431'
 
 # Строка подключения
-# connection_string = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
-# engine = create_engine(connection_string)
+connection_string = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+engine = create_engine(connection_string)
 
 # === Основной процесс ===
 print("🚀 Начинаем полную загрузку данных из YClients и запись в PostgreSQL...\n")
@@ -57,10 +61,10 @@ entities = {
     "service_categories": service_categories,
     "services" : services
 }
-
+    
 for table_name, df in entities.items():
-    # print(f"\n=== {table_name.upper()} ===")
-    # upload_to_postgres(df, table_name, engine)
-    df.to_excel(f"Dashboard/{table_name}.xlsx", index=False) # Для выгрузки excel
+    df.to_sql(table_name, engine, if_exists='replace', index=False)
+    print(f"📥 Данные загружены в таблицу {table_name} ({len(df)} строк).")
+    # df.to_excel(f"Dashboard/{table_name}.xlsx", index=False) # Для выгрузки excel
 
 print("\n🎉 Все данные успешно загружены в БД!")

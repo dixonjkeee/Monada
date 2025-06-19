@@ -31,7 +31,7 @@ headers = {
 }
 
 # Команда для создания БД 
-# docker run --name monada_db -e POSTGRES_PASSWORD=secret -p 5431:5432 -d postgres
+# docker run --name monada_db -e POSTGRES_USER=myuser -e POSTGRES_PASSWORD=secret -e POSTGRES_DB=mydatabase -p 5431:5432 -d postgres
 
 # === Данные подключения к PostgreSQL ===
 db_user = 'user'

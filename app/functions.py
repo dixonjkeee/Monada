@@ -1,7 +1,6 @@
 from tqdm import tqdm
 import requests
 import pandas as pd
-from tqdm import tqdm
 
 # === Функция для загрузки всех страниц из API ===
 def get_all_pages(url, headers, method='GET', body=None):
